@@ -1,4 +1,5 @@
 using MediCare.Data;
+using MediCare.Data.Seeding;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,13 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDataLayer(connectionString);
 
 var app = builder.Build();
+
+// Seed roles and the optional initial Admin.
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<IdentitySeeder>();
+    await seeder.SeedAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

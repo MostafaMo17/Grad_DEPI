@@ -3,6 +3,7 @@ using MediCare.Services.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using MediCare.Data.Seeding;
 
 namespace MediCare.Data
 {
@@ -27,6 +28,7 @@ namespace MediCare.Data
                 .AddRoles<IdentityRole<int>>()
                 .AddEntityFrameworkStores<AppDbContext>();
 
+            services.AddScoped<IdentitySeeder>();
             return services;
         }
     }
