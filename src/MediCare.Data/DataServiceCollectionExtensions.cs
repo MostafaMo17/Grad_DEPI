@@ -24,11 +24,18 @@ namespace MediCare.Data
             services.AddIdentityCore<ApplicationUser>(options =>
             {
                 options.User.RequireUniqueEmail = true;
+
+                // Login Protection
+                options.Lockout.AllowedForNewUsers = true;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
             })
                 .AddRoles<IdentityRole<int>>()
                 .AddEntityFrameworkStores<AppDbContext>();
 
             services.AddScoped<IdentitySeeder>();
+            services.AddScoped<SpecializationSeeder>();
+
             return services;
         }
     }

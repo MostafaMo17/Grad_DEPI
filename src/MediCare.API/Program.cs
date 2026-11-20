@@ -1,3 +1,4 @@
+using MediCare.API.Middleware;
 using MediCare.Data;
 using MediCare.Data.Seeding;
 
@@ -20,9 +21,11 @@ var app = builder.Build();
 // Seed roles and the optional initial Admin.
 using (var scope = app.Services.CreateScope())
 {
-    var seeder = scope.ServiceProvider.GetRequiredService<IdentitySeeder>();
-    await seeder.SeedAsync();
+    await scope.ServiceProvider.GetRequiredService<IdentitySeeder>().SeedAsync();
+    await scope.ServiceProvider.GetRequiredService<SpecializationSeeder>().SeedAsync();
 }
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
