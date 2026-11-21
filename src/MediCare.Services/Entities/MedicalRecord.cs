@@ -21,11 +21,13 @@ namespace MediCare.Services.Entities
         [MaxLength(1000)]
         public string Diagnosis { get; set; } = string.Empty;
 
+        [Required]
         [MaxLength(1000)]
-        public string? TreatmentNotes { get; set; }
+        public string TreatmentNotes { get; set; } = string.Empty;
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
-        public Prescription? Prescription { get; set; }
+        // Prescription versions of this record (an issued prescription is never edited, a new version is created)
+        public ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();
     }
 }

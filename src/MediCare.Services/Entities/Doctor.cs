@@ -32,6 +32,10 @@ namespace MediCare.Services.Entities
         [MaxLength(500)]
         public string? ProfileImage { get; set; }
 
+        // Where the doctor works (for example "Main Clinic - Room 402"), Used by the doctor search filter.
+        [MaxLength(200)]
+        public string? Location { get; set; }
+
         // New doctor registrations start as Pending and are not bookable until Admin approval.
         public DoctorApprovalStatus ApprovalStatus { get; set; } = DoctorApprovalStatus.Pending;
 

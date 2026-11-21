@@ -13,10 +13,13 @@ namespace MediCare.Services.Entities
         [ForeignKey(nameof(MedicalRecordId))]
         public MedicalRecord MedicalRecord { get; set; } = null!;
 
+        // 1 for the first prescription of a record, then 2, 3, ...
+        public int VersionNumber { get; set; }
+
         [MaxLength(1000)]
         public string? Notes { get; set; }
 
-        public DateTime IssuedAt { get; set; } = DateTime.UtcNow;
+        public DateTime IssuedAtUtc { get; set; } = DateTime.UtcNow;
 
         public ICollection<PrescriptionItem> PrescriptionItems { get; set; } = new List<PrescriptionItem>();
     }

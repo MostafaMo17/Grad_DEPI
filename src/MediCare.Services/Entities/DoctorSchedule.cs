@@ -18,8 +18,9 @@ namespace MediCare.Services.Entities
         public TimeOnly StartTime { get; set; }
         public TimeOnly EndTime { get; set; }
 
-        public int SlotDurationMinutes { get; set; } = 30;
+        public int SlotLengthMinutes { get; set; } = 30;
 
+        // false = the doctor does not work on this day
         public bool IsAvailable { get; set; } = true;
     }
 }

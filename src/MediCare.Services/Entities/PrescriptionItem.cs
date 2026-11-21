@@ -19,7 +19,7 @@ namespace MediCare.Services.Entities
 
         [Required]
         [MaxLength(100)]
-        public string Dosage { get; set; } = string.Empty;
+        public string Dose { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(100)]

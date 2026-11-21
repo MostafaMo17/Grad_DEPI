@@ -19,15 +19,26 @@ namespace MediCare.Services.Entities
         public Patient Patient { get; set; } = null!;
 
         public DateOnly AppointmentDate { get; set; }
-        public TimeOnly StartTime { get; set; }
-        public TimeOnly EndTime { get; set; }
+        public DateTime StartDateTimeUtc { get; set; }
+
+        public DateTime EndDateTimeUtc { get; set; }
 
         public AppointmentStatus Status { get; set; } = AppointmentStatus.Pending;
+        
+        [MaxLength(500)]
+        public string? Reason { get; set; }
 
         [MaxLength(500)]
         public string? Notes { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        [MaxLength(500)]
+        public string? RejectionReason { get; set; }
+
+        public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+        // Changes on every update. EF uses it to detect that two people changed the same row at the same time
+        [Timestamp]
+        public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
         public MedicalRecord? MedicalRecord { get; set; }
     }

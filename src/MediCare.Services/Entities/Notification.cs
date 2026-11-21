@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace MediCare.Services.Entities
 {
     [Table("Notifications")]
-    public class Notifications
+    public class Notification
     {
         [Key]
         public int NotificationId { get; set; }
