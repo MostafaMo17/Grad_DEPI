@@ -34,5 +34,9 @@ namespace MediCare.Services.Entities
 
         // New doctor registrations start as Pending and are not bookable until Admin approval.
         public DoctorApprovalStatus ApprovalStatus { get; set; } = DoctorApprovalStatus.Pending;
+
+        public ICollection<DoctorSchedule> DoctorSchedules { get; set; } = new List<DoctorSchedule>();
+        public ICollection<DoctorVacation> DoctorVacations { get; set; } = new List<DoctorVacation>();
+        public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
     }
 }

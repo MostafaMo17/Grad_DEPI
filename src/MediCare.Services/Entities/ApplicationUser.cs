@@ -15,5 +15,6 @@ namespace MediCare.Services.Entities
 
         public Patient? Patient { get; set; }
         public Doctor? Doctor { get; set; }
+        public ICollection<Notifications> Notifications { get; set; }
     }
 }

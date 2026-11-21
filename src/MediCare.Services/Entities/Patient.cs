@@ -23,5 +23,7 @@ namespace MediCare.Services.Entities
         // Maintained by the patient after registration 
         public string? MedicalHistory { get; set; }
         public string? Allergies { get; set; }
+
+        public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
     }
 }
