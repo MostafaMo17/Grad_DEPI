@@ -13,6 +13,10 @@ namespace MediCare.Services.Dtos
         // Patient, Doctor or Admin
         public string Role { get; set; } = string.Empty;
 
+        public int? PatientId { get; set; }
+
+        public int? DoctorId { get; set; }
+
         // Only for doctors: Pending, Approved or Rejected. Null for everyone else
         public string? DoctorApprovalStatus { get; set; }
     }

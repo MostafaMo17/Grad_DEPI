@@ -14,6 +14,7 @@ namespace MediCare.Services.Implementations
     public class AuthService : IAuthService
     {
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IPatientRepository _patientRepository;
         private readonly IDoctorRepository _doctorRepository;
         private readonly ISpecializationRepository _specializationRepository;
         private readonly IUnitOfWork _unitOfWork;
@@ -21,12 +22,14 @@ namespace MediCare.Services.Implementations
 
         public AuthService(
             UserManager<ApplicationUser> userManager,
+            IPatientRepository patientRepository,
             IDoctorRepository doctorRepository,
             ISpecializationRepository specializationRepository,
             IUnitOfWork unitOfWork,
             ITokenService tokenService)
         {
             _userManager = userManager;
+            _patientRepository = patientRepository;
             _doctorRepository = doctorRepository;
             _specializationRepository = specializationRepository;
             _unitOfWork = unitOfWork;
@@ -54,7 +57,7 @@ namespace MediCare.Services.Implementations
 
             await CreateAccountAsync(user, dto.Password, RoleNames.Patient);
 
-            return CreateLoginResponse(user, RoleNames.Patient, null);
+            return await CreateLoginResponseAsync(user, RoleNames.Patient);
         }
 
         public async Task<LoginResponseDto> RegisterDoctorAsync(RegisterDoctorDto dto)
@@ -67,7 +70,7 @@ namespace MediCare.Services.Implementations
 
             ApplicationUser user = CreateUserObject(dto.FullName, dto.Email, dto.PhoneNumber);
 
-            // A new doctor is always Pending until an Admin approves
+            // new doctor always Pending until Admin approve
             user.Doctor = new Doctor
             {
                 SpecializationId = dto.SpecializationId,
@@ -78,14 +81,14 @@ namespace MediCare.Services.Implementations
 
             await CreateAccountAsync(user, dto.Password, RoleNames.Doctor);
 
-            return CreateLoginResponse(user, RoleNames.Doctor, DoctorApprovalStatus.Pending.ToString());
+            return await CreateLoginResponseAsync(user, RoleNames.Doctor);
         }
 
-        //  Login
+        //  Login 
 
         public async Task<LoginResponseDto> LoginAsync(LoginDto dto)
         {
-          
+
             const string invalidLoginMessage = "Invalid email or password.";
             const string lockedMessage = "Too many failed login attempts. Please try again in a few minutes.";
 
@@ -95,17 +98,17 @@ namespace MediCare.Services.Implementations
                 throw new UnauthorizedException(invalidLoginMessage);
             }
 
-            // A locked account cannot log in, even with the correct password
+            // locked account cannot log in, even with the correct password
             if (await _userManager.IsLockedOutAsync(user))
             {
                 throw new LockedException(lockedMessage);
             }
 
-            // The password is not trimmed , a space can be part of it.
+            // password is not trimmed, a space can be part of it
             bool passwordIsCorrect = await _userManager.CheckPasswordAsync(user, dto.Password);
             if (!passwordIsCorrect)
             {
-                // This counts the failed attempt. After 5 failures Identity locks the account for 5 minutes.
+                // This count the failed attempt, After 5 failures Identity locks the account for 5 minutes
                 await _userManager.AccessFailedAsync(user);
 
                 if (await _userManager.IsLockedOutAsync(user))
@@ -119,7 +122,7 @@ namespace MediCare.Services.Implementations
             // The password is correct, so clear the failed attempts counter
             await _userManager.ResetAccessFailedCountAsync(user);
 
-            // The account was deactivated by an Admin. We say so only after the password was proven correct.
+            // The account was deactivated by an Admin, We say after the password was proven correct
             if (!user.IsActive)
             {
                 throw new ForbiddenException("This account is not active. Please contact the clinic.");
@@ -128,42 +131,35 @@ namespace MediCare.Services.Implementations
             IList<string> roles = await _userManager.GetRolesAsync(user);
             if (roles.Count != 1)
             {
-                // This should never happen (one role per account) It becomes a 500 error and is written to the log
+                // This should never happen (one role per account), It becomes a 500 error and is written to the log
                 throw new InvalidOperationException(
                     "User " + user.Id + " must have exactly one role but has " + roles.Count + ".");
             }
 
-            string role = roles[0];
-            string? approvalStatus = await GetDoctorApprovalStatusAsync(user.Id, role);
-
-            return CreateLoginResponse(user, role, approvalStatus);
+            return await CreateLoginResponseAsync(user, roles[0]);
         }
 
-        // Token check (runs on every request that has a token) 
+        //  Token check (runs on every request that has a token) 
 
         public async Task<UserDto?> GetUserForTokenAsync(int userId)
         {
-            // The token lives for days, so we check the database on every request.
+            // The token lives for days, so we check the database on every request
             ApplicationUser? user = await _userManager.FindByIdAsync(userId.ToString());
 
-            // User deleted or deactivated , the token is rejected immediately.
+            // User deleted or deactivated: the token is rejected immediately
             if (user == null || !user.IsActive)
             {
                 return null;
             }
 
-            // The role always comes from the database, never from the token
-            // so a changed role takes effect at once.
+            // The role always comes from the database, never from the token so a changed role takes effect at once
             IList<string> roles = await _userManager.GetRolesAsync(user);
             if (roles.Count != 1)
             {
                 return null;
             }
 
-            string role = roles[0];
-            string? approvalStatus = await GetDoctorApprovalStatusAsync(user.Id, role);
-
-            return CreateUserDto(user, role, approvalStatus);
+            return await BuildUserDtoAsync(user, roles[0]);
         }
 
         //  Helpers 
@@ -173,14 +169,14 @@ namespace MediCare.Services.Implementations
             ApplicationUser user = new ApplicationUser();
             user.FullName = fullName.Trim();
             user.Email = email.Trim();
-            user.UserName = email.Trim();   // the email is the user name
+            user.UserName = email.Trim();   // email is the user name
             user.PhoneNumber = phoneNumber.Trim();
             user.IsActive = true;
             return user;
         }
 
-        // Creates the account (with its profile) and assigns the role in ONE transaction
-        // If anything fails, everything is rolled back, so we never keep a half registered account.
+        // Creates the account with its profile and assigns the role in ONE transaction
+        // If anything fails, everything is rolled back so never keep a half registered account
         private async Task CreateAccountAsync(ApplicationUser user, string password, string role)
         {
             await _unitOfWork.BeginTransactionAsync();
@@ -201,7 +197,7 @@ namespace MediCare.Services.Implementations
             }
         }
 
-        // Turns a failed Identity result into one of our exceptions.
+        // Turn a failed Identity result into our exceptions
         private void ThrowIfFailed(IdentityResult result)
         {
             if (result.Succeeded)
@@ -217,46 +213,49 @@ namespace MediCare.Services.Implementations
                 }
             }
 
-            // For example "Passwords must have at least one uppercase (A-Z)."
+            // For example: Passwords must have at least one uppercase
             string message = string.Join(" ", result.Errors.Select(e => e.Description));
             throw new BadRequestException(message);
         }
 
-        private async Task<string?> GetDoctorApprovalStatusAsync(int userId, string role)
-        {
-            if (role != RoleNames.Doctor)
-            {
-                return null;
-            }
-
-            Doctor? doctor = await _doctorRepository.GetByUserIdAsync(userId);
-            if (doctor == null)
-            {
-                return null;
-            }
-
-            return doctor.ApprovalStatus.ToString();
-        }
-
-        private LoginResponseDto CreateLoginResponse(ApplicationUser user, string role, string? doctorApprovalStatus)
+        private async Task<LoginResponseDto> CreateLoginResponseAsync(ApplicationUser user, string role)
         {
             string token = _tokenService.CreateToken(user, out DateTime expiresAtUtc);
 
             LoginResponseDto response = new LoginResponseDto();
             response.Token = token;
             response.ExpiresAtUtc = expiresAtUtc;
-            response.User = CreateUserDto(user, role, doctorApprovalStatus);
+            response.User = await BuildUserDtoAsync(user, role);
             return response;
         }
 
-        private UserDto CreateUserDto(ApplicationUser user, string role, string? doctorApprovalStatus)
+        // the user data, including the profile ids that the API uses to check ownership
+        private async Task<UserDto> BuildUserDtoAsync(ApplicationUser user, string role)
         {
             UserDto dto = new UserDto();
             dto.UserId = user.Id;
             dto.FullName = user.FullName;
             dto.Email = user.Email ?? string.Empty;
             dto.Role = role;
-            dto.DoctorApprovalStatus = doctorApprovalStatus;
+
+            if (role == RoleNames.Patient)
+            {
+                Patient? patient = await _patientRepository.GetByUserIdAsync(user.Id);
+                if (patient != null)
+                {
+                    dto.PatientId = patient.PatientId;
+                }
+            }
+            else if (role == RoleNames.Doctor)
+            {
+                Doctor? doctor = await _doctorRepository.GetByUserIdAsync(user.Id);
+                if (doctor != null)
+                {
+                    dto.DoctorId = doctor.DoctorId;
+                    dto.DoctorApprovalStatus = doctor.ApprovalStatus.ToString();
+                }
+            }
+
             return dto;
         }
     }
