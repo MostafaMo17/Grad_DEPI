@@ -1,6 +1,3 @@
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.RateLimiting;
 using MediCare.API.Middleware;
 using MediCare.API.Security;
 using MediCare.API.Services;
@@ -11,8 +8,13 @@ using MediCare.Services.Implementations;
 using MediCare.Services.Interfaces;
 using MediCare.Services.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using System.Text;
+using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,9 +27,32 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 });
 #endregion
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+#region //  Swagger 
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "MediCare API", Version = "v1" });
+
+    // The token is sent in the header: Authorization: Bearer <token>
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "Log in, then paste the token here (without the word Bearer)."
+    });
+
+    // Apply the Bearer scheme to all endpoints 
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = new List<string>()
+    });
+});
+
+#endregion
 
 #region // Database 
 
@@ -42,6 +67,7 @@ builder.Services.AddDataLayer(connectionString);
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 
 #region // JWT settings 
@@ -50,6 +76,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 
 string jwtKey = builder.Configuration["Jwt:SigningKey"] ?? string.Empty;
 
+// Stop if the key is missing or too weak
 if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
 {
     throw new InvalidOperationException(
@@ -84,7 +111,9 @@ builder.Services.AddAuthentication(options =>
     // After the normal checks, we check the user in the database (see JwtTokenEvents)
     options.Events = new JwtBearerEvents
     {
-        OnTokenValidated = JwtTokenEvents.OnTokenValidated
+        OnTokenValidated = JwtTokenEvents.OnTokenValidated,
+        OnChallenge = JwtTokenEvents.OnChallenge,
+        OnForbidden = JwtTokenEvents.OnForbidden
     };
 });
 
@@ -94,7 +123,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization(options =>
 {
-    
+    // [Authorize(Policy = "ApprovedDoctor")]    
     options.AddPolicy("ApprovedDoctor", policy =>
     {
         policy.RequireRole(RoleNames.Doctor);
@@ -104,11 +133,24 @@ builder.Services.AddAuthorization(options =>
 #endregion
 
 #region //  Rate limiting 
-// login policy: at most 10 requests per minute from the same IP address. More requests get HTTP 429.
+// login policy: at most 10 requests per minute from the same IP address. More requests get HTTP 429
 
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Return a JSON error body instead of an empty response
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        ProblemDetails problem = new ProblemDetails();
+        problem.Status = 429;
+        problem.Title = "Too many requests";
+        problem.Detail = "Too many requests. Please wait a minute and try again.";
+        problem.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+
+        context.HttpContext.Response.StatusCode = 429;
+        await context.HttpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
+    };
 
     options.AddPolicy("login", httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
@@ -138,7 +180,13 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    //app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "MediCare API v1");
+        options.EnablePersistAuthorization();   // keep the token after refreshing the page
+    });
 }
 
 app.UseHttpsRedirection();

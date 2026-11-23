@@ -1,16 +1,15 @@
+using System.Threading.Tasks;
 using MediCare.API.Extensions;
 using MediCare.Services.Dtos;
 using MediCare.Services.Interfaces;
-using MediCare.Services.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace MediCare.API.Controllers
 {
-    // Register, login 
+    // Register, Login , ME
+
     [Route("api/v1/auth")]
     [ApiController]
     public class AuthController : ControllerBase
@@ -24,6 +23,9 @@ namespace MediCare.API.Controllers
 
         // POST api/v1/auth/register/patient
         [HttpPost("register/patient")]
+        [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientDto dto)
         {
             LoginResponseDto response = await _authService.RegisterPatientAsync(dto);
@@ -32,6 +34,9 @@ namespace MediCare.API.Controllers
 
         // POST api/v1/auth/register/doctor
         [HttpPost("register/doctor")]
+        [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
         public async Task<IActionResult> RegisterDoctor([FromBody] RegisterDoctorDto dto)
         {
             LoginResponseDto response = await _authService.RegisterDoctorAsync(dto);
@@ -42,6 +47,12 @@ namespace MediCare.API.Controllers
         // Limited to 10 requests per minute per IP address 
         [HttpPost("login")]
         [EnableRateLimiting("login")]
+        [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status423Locked)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             LoginResponseDto response = await _authService.LoginAsync(dto);
@@ -52,16 +63,33 @@ namespace MediCare.API.Controllers
         // The claims were filled from the database by JwtTokenEvents on this same request
         [HttpGet("me")]
         [Authorize]
+        [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
         public IActionResult Me()
         {
             UserDto dto = new UserDto();
-            dto.UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-            dto.FullName = User.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty;
-            dto.Email = User.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty;
-            dto.Role = User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
-            dto.DoctorApprovalStatus = User.FindFirst(AppClaimTypes.DoctorApprovalStatus)?.Value;
+            dto.UserId = User.GetUserId();
+            dto.FullName = User.GetFullName();
+            dto.Email = User.GetEmail();
+            dto.Role = User.GetRole();
+            dto.PatientId = User.GetPatientId();
+            dto.DoctorId = User.GetDoctorId();
+            dto.DoctorApprovalStatus = User.GetDoctorApprovalStatus();
 
             return Ok(dto);
+        }
+
+        // GET api/v1/auth/doctor-check
+        // TEMPORARY test endpoint for the "ApprovedDoctor" policy
+        // Removed when the doctor endpoints exist
+        [HttpGet("doctor-check")]
+        [Authorize(Policy = "ApprovedDoctor")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+        public IActionResult DoctorCheck()
+        {
+            return Ok(new { message = "You are an approved doctor." });
         }
     }
 }

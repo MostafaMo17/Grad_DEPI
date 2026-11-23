@@ -2,6 +2,7 @@
 using MediCare.Services.Interfaces;
 using MediCare.Services.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace MediCare.API.Security
@@ -25,20 +26,59 @@ namespace MediCare.API.Security
 
             if (user == null)
             {
-                // The user is deactivated or deleted, the token is no longer accepted (401).
+                // The user is deactivated or deleted: the token is no longer accepted (401).
                 context.Fail("The token is no longer valid.");
                 return;
             }
 
-            // Add fresh claims read from the database.
+            // Add fresh claims read from the database
             identity.AddClaim(new Claim(ClaimTypes.Name, user.FullName));
             identity.AddClaim(new Claim(ClaimTypes.Email, user.Email));
             identity.AddClaim(new Claim(ClaimTypes.Role, user.Role));
+
+            if (user.PatientId != null)
+            {
+                identity.AddClaim(new Claim(AppClaimTypes.PatientId, user.PatientId.Value.ToString()));
+            }
+
+            if (user.DoctorId != null)
+            {
+                identity.AddClaim(new Claim(AppClaimTypes.DoctorId, user.DoctorId.Value.ToString()));
+            }
 
             if (user.DoctorApprovalStatus != null)
             {
                 identity.AddClaim(new Claim(AppClaimTypes.DoctorApprovalStatus, user.DoctorApprovalStatus));
             }
+        }
+
+        // no token, or an invalid token: return 401 with a JSON body 
+        public static async Task OnChallenge(JwtBearerChallengeContext context)
+        {
+            context.HandleResponse();
+
+            ProblemDetails problem = new ProblemDetails();
+            problem.Status = 401;
+            problem.Title = "Unauthorized";
+            problem.Detail = "You must log in with a valid token to use this endpoint.";
+            problem.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+
+            context.Response.StatusCode = 401;
+            context.Response.Headers["WWW-Authenticate"] = "Bearer";
+            await context.Response.WriteAsJsonAsync(problem);
+        }
+
+        // A valid token, but the user is not allowed : return 403 with a JSON body
+        public static async Task OnForbidden(ForbiddenContext context)
+        {
+            ProblemDetails problem = new ProblemDetails();
+            problem.Status = 403;
+            problem.Title = "Forbidden";
+            problem.Detail = "You do not have permission to use this endpoint.";
+            problem.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+
+            context.Response.StatusCode = 403;
+            await context.Response.WriteAsJsonAsync(problem);
         }
     }
 }

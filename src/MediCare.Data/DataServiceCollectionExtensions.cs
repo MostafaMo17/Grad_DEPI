@@ -40,6 +40,8 @@ namespace MediCare.Data
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IDoctorRepository, DoctorRepository>();
+            services.AddScoped<IPatientRepository, PatientRepository>();
+            services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<ISpecializationRepository, SpecializationRepository>();
 
             services.AddScoped<IdentitySeeder>();
