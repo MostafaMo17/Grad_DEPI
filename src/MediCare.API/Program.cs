@@ -43,6 +43,7 @@ builder.Services.AddDataLayer(connectionString);
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
+builder.Services.AddScoped<IDoctorScheduleService, DoctorScheduleService>();
 
 #region // JWT settings 
 // Jwt:SigningKey is secret (User Secrets locally, environment variable Jwt__SigningKey in hosting)
