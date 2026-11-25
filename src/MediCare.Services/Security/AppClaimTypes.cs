@@ -12,5 +12,9 @@ namespace MediCare.Services.Security
 
         public const string PatientId = "PatientId";
         public const string DoctorId = "DoctorId";
+
+        // Scope claim limits what a token can be used for و  hub token has scope "hub"
+        public const string Scope = "scope";
+        public const string HubScope = "hub";
     }
 }

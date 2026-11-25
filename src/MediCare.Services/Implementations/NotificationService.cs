@@ -12,10 +12,12 @@ namespace MediCare.Services.Implementations
     public class NotificationService : INotificationService
     {
         private readonly INotificationRepository _repository;
+        private readonly IRealTimeNotifier _realTimeNotifier;
 
-        public NotificationService(INotificationRepository repository)
+        public NotificationService(INotificationRepository repository, IRealTimeNotifier realTimeNotifier)
         {
             _repository = repository;
+            _realTimeNotifier = realTimeNotifier;
         }
 
         public async Task<PagedResultDto<NotificationDto>> GetMyNotificationsAsync(
@@ -84,7 +86,11 @@ namespace MediCare.Services.Implementations
             notification.Title = title;
             notification.Message = message;
 
+            // الاول هنعملها save , so it is never lost
             await _repository.AddAsync(notification);
+
+            // Then push it live
+            await _realTimeNotifier.SendAsync(userId, ToDto(notification));
         }
 
         private NotificationDto ToDto(Notification notification)

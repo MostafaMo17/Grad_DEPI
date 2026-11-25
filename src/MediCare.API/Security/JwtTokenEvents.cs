@@ -10,6 +10,19 @@ namespace MediCare.API.Security
     // Runs after ASP.NET has checked the token signature, issuer, audience and expiry
     public static class JwtTokenEvents
     {
+        //  SignalR sends the token in the query string ,a query-string token ONLY for the hub path
+        public static Task OnMessageReceived(MessageReceivedContext context)
+        {
+            string? accessToken = context.Request.Query["access_token"];
+
+            if (!string.IsNullOrEmpty(accessToken) && context.Request.Path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+
+            return Task.CompletedTask;
+        }
+
         public static async Task OnTokenValidated(TokenValidatedContext context)
         {
             ClaimsIdentity? identity = context.Principal?.Identity as ClaimsIdentity;
@@ -18,6 +31,15 @@ namespace MediCare.API.Security
             if (identity == null || !int.TryParse(userIdText, out int userId))
             {
                 context.Fail("The token is not valid.");
+                return;
+            }
+
+            // A hub token (scope = hub) is accepted only on the hub path, It must not work on normal endpoints
+            string? scope = context.Principal?.FindFirst(AppClaimTypes.Scope)?.Value;
+            bool isHubPath = context.HttpContext.Request.Path.StartsWithSegments("/hubs");
+            if (scope == AppClaimTypes.HubScope && !isHubPath)
+            {
+                context.Fail("This token can only be used for the notification hub.");
                 return;
             }
 
