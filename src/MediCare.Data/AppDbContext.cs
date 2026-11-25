@@ -23,6 +23,14 @@ namespace MediCare.Data
         public DbSet<PrescriptionItem> PrescriptionItems => Set<PrescriptionItem>();
         public DbSet<Notification> Notifications => Set<Notification>();
 
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            base.ConfigureConventions(configurationBuilder);
+
+            // All DateTime values in this application are UTC in the database
+            configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
+        }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

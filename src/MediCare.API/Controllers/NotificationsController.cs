@@ -1,10 +1,11 @@
-﻿using System.Threading.Tasks;
-using MediCare.API.Extensions;
+﻿using MediCare.API.Extensions;
+using MediCare.API.Services;
 using MediCare.Services.Dtos;
 using MediCare.Services.Enums;
 using MediCare.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace MediCare.API.Controllers
 {
@@ -15,11 +16,16 @@ namespace MediCare.API.Controllers
     public class NotificationsController : ControllerBase
     {
         private readonly INotificationService _notificationService;
+        private readonly ITokenService _tokenService;
         private readonly IWebHostEnvironment _environment;
 
-        public NotificationsController(INotificationService notificationService, IWebHostEnvironment environment)
+        public NotificationsController(
+            INotificationService notificationService,
+            ITokenService tokenService,
+            IWebHostEnvironment environment)
         {
             _notificationService = notificationService;
+            _tokenService = tokenService;
             _environment = environment;
         }
 
@@ -67,6 +73,22 @@ namespace MediCare.API.Controllers
         {
             await _notificationService.MarkAllAsReadAsync(User.GetUserId());
             return NoContent();
+        }
+
+        // POST api/v1/notifications/hub-token
+        // Gives a 5-minute token for connecting to the SignalR hub (/hubs/notifications).
+        // MediCare.Web calls this on the server side with the user's normal token, and gives only this short token to the browser.
+        [HttpPost("hub-token")]
+        [ProducesResponseType(typeof(HubTokenDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        public IActionResult CreateHubToken()
+        {
+            Response.Headers["Cache-Control"] = "no-store";
+
+            HubTokenDto dto = new HubTokenDto();
+            dto.Token = _tokenService.CreateHubToken(User.GetUserId(), out DateTime expiresAtUtc);
+            dto.ExpiresAtUtc = expiresAtUtc;
+            return Ok(dto);
         }
 
         // POST api/v1/notifications/dev-test

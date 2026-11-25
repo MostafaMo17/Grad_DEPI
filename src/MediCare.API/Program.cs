@@ -15,6 +15,7 @@ using Microsoft.OpenApi;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using MediCare.API.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,6 +55,25 @@ builder.Services.AddSwaggerGen(options =>
 
 #endregion
 
+#region // SignalR and CORS
+
+builder.Services.AddSignalR();
+
+// The browser connects to the hub directly
+string[] allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new string[0];
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("MvcClient", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();   // SignalR needs this
+    });
+});
+#endregion
+
 #region // Database 
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -68,6 +88,7 @@ builder.Services.AddDataLayer(connectionString);
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IRealTimeNotifier, SignalRNotifier>();
 
 
 #region // JWT settings 
@@ -111,9 +132,11 @@ builder.Services.AddAuthentication(options =>
     // After the normal checks, we check the user in the database (see JwtTokenEvents)
     options.Events = new JwtBearerEvents
     {
+        OnMessageReceived = JwtTokenEvents.OnMessageReceived,
         OnTokenValidated = JwtTokenEvents.OnTokenValidated,
         OnChallenge = JwtTokenEvents.OnChallenge,
         OnForbidden = JwtTokenEvents.OnForbidden
+
     };
 });
 
@@ -180,6 +203,7 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
+    app.UseStaticFiles(); // for the test pages in wwwroot/dev/ 
     //app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI(options =>
@@ -191,11 +215,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("MvcClient");
+
 app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();

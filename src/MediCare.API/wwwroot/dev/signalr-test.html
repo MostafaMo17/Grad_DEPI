@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>MediCare SignalR test (development only)</title>
+</head>
+<body style="font-family: sans-serif; max-width: 760px; margin: 30px auto;">
+    <h2>MediCare SignalR test (development only)</h2>
+    <p>
+        Email <input id="email" value="patient1@test.local">
+        Password <input id="password" type="password" value="Test@12345">
+        <button id="loginBtn">Login and connect</button>
+    </p>
+    <p><button id="testBtn" disabled>Create a test notification for me</button></p>
+    <pre id="log" style="background:#f4f4f4; padding:10px; min-height:200px;"></pre>
+
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+    <script>
+    // NOTE: this page keeps the normal token in a JavaScript variable only because it is a development test page.
+    // MediCare.Web must NEVER do this. the normal token stays on the server, and the browser gets only the 5-minute hub token.
+    let apiToken = null;
+
+    function log(text) {
+      document.getElementById("log").textContent += new Date().toLocaleTimeString() + "  " + text + "\n";
+    }
+
+    // SignalR calls this every time it connects or reconnects.
+    async function getHubToken() {
+      const response = await fetch("/api/v1/notifications/hub-token", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + apiToken }
+      });
+      const data = await response.json();
+      return data.token;
+    }
+
+    document.getElementById("loginBtn").onclick = async () => {
+      const response = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: document.getElementById("email").value,
+          password: document.getElementById("password").value
+        })
+      });
+
+      if (!response.ok) {
+        log("Login failed: HTTP " + response.status);
+        return;
+      }
+
+      const data = await response.json();
+      apiToken = data.token;
+      log("Logged in as " + data.user.fullName + " (" + data.user.role + ")");
+
+      const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/hubs/notifications", { accessTokenFactory: getHubToken })
+        .withAutomaticReconnect()
+        .build();
+
+      // The server calls this method when a notification arrives for this user.
+      connection.on("ReceiveNotification", (n) => {
+        log("NOTIFICATION [" + n.type + "] " + n.title + " - " + n.message + "  (created " + n.createdAtUtc + ")");
+      });
+
+      connection.onreconnecting(() => log("Connection lost, reconnecting..."));
+      connection.onreconnected(() => log("Reconnected."));
+      connection.onclose(() => log("Connection closed."));
+
+      await connection.start();
+      log("Connected to the hub.");
+      document.getElementById("testBtn").disabled = false;
+    };
+
+    document.getElementById("testBtn").onclick = async () => {
+      const response = await fetch("/api/v1/notifications/dev-test", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + apiToken }
+      });
+      log("dev-test request: HTTP " + response.status);
+    };
+    </script>
+</body>
+</html>
