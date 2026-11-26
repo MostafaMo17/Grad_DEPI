@@ -1,6 +1,63 @@
-@MediCare.API_HostAddress = http://localhost:5293
+@host = http://localhost:5293
 
-GET {{MediCare.API_HostAddress}}/weatherforecast/
-Accept: application/json
+### 1) Register a doctor (once)
+POST {{host}}/api/v1/auth/register/doctor
+Content-Type: application/json
 
-###
+{
+  "fullName": "Test Doctor",
+  "email": "doctor@test.com",
+  "phoneNumber": "01000000000",
+  "password": "Test@1234",
+  "specializationId": 1,
+  "licenseNumber": "LIC-1001",
+  "consultationFee": 200
+}
+
+### 2) BEFORE step 3: approve the doctor in the database (SQL, once)
+-- UPDATE Doctors SET ApprovalStatus = 'Approved' WHERE LicenseNumber = N'LIC-1001';
+
+### 3) Login
+# @name login
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "doctor@test.com",
+  "password": "Test@1234"
+}
+
+### 4) Get my schedules (expect 200, empty list the first time)
+GET {{host}}/api/v1/doctor/schedules
+Authorization: Bearer {{login.response.body.$.token}}
+
+### 5) Save my weekly schedule (Mon/Wed 9-5, Tue 10-2, 30 min slots)
+PUT {{host}}/api/v1/doctor/schedules
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.token}}
+
+{
+  "days": [
+    { "dayOfWeek": "Monday", "startTime": "09:00:00", "endTime": "17:00:00", "slotLengthMinutes": 30 },
+    { "dayOfWeek": "Tuesday", "startTime": "10:00:00", "endTime": "14:00:00", "slotLengthMinutes": 30 },
+    { "dayOfWeek": "Wednesday", "startTime": "09:00:00", "endTime": "17:00:00", "slotLengthMinutes": 30 }
+  ]
+}
+
+### 6) Get again (expect the 3 days)
+GET {{host}}/api/v1/doctor/schedules
+Authorization: Bearer {{login.response.body.$.token}}
+
+### 7) Without a token (expect 401)
+GET {{host}}/api/v1/doctor/schedules
+
+### 8) Bad data: end before start (expect 400)
+PUT {{host}}/api/v1/doctor/schedules
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.token}}
+
+{
+  "days": [
+    { "dayOfWeek": "Friday", "startTime": "17:00:00", "endTime": "09:00:00", "slotLengthMinutes": 30 }
+  ]
+}

@@ -8,6 +8,7 @@ namespace MediCare.Services.Interfaces
     public interface IDoctorScheduleRepository
     {
             Task<List<DoctorSchedule>> GetByDoctorIdAsync(int doctorId);
-        }
+        Task ReplaceForDoctorAsync(int doctorId, List<DoctorSchedule> schedules);
+    }
     }
 
