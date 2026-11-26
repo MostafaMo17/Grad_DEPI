@@ -32,6 +32,7 @@ namespace MediCare.Services.Entities
         [MaxLength(500)]
         public string? ProfileImage { get; set; }
 
+
         // Where the doctor works (for example "Main Clinic - Room 402"), Used by the doctor search filter.
         [MaxLength(200)]
         public string? Location { get; set; }

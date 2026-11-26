@@ -1,13 +1,10 @@
-﻿using MediCare.Services.Interfaces;
+﻿
+using MediCare.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MediCare.Data.Repositories
 {
-    // Uses the same AppDbContext (one per request) as Identity UserManager
-    // so everything they save inside the transaction is committed or rolled back together.
     public class UnitOfWork : IUnitOfWork
     {
         private readonly AppDbContext _dbContext;
@@ -41,6 +38,11 @@ namespace MediCare.Data.Repositories
                 await _transaction.DisposeAsync();
                 _transaction = null;
             }
+        }
+
+        public async Task<int> SaveChangesAsync()
+        {
+            return await _dbContext.SaveChangesAsync();
         }
     }
 }
