@@ -1,0 +1,22 @@
+﻿@model UserDto
+@{
+    ViewData["Title"] = "Account status";
+}
+
+<h1>Account status</h1>
+
+@if (Model.DoctorApprovalStatus == DoctorApprovalStatuses.Rejected)
+{
+    <div class="mc-alert mc-alert--error">
+        Your registration was rejected. Please contact the clinic.
+    </div>
+}
+else
+{
+    <div class="mc-alert mc-alert--info">
+        Your registration is waiting for the clinic admin to approve it.
+        You can use the doctor pages as soon as it is approved.
+    </div>
+}
+
+<p><a class="mc-btn" asp-action="PendingApproval">Check again</a></p>

@@ -1,0 +1,21 @@
+﻿@using System.Security.Claims
+@{
+    ViewData["Title"] = "Dashboard";
+    string role = User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
+}
+
+<h1>Welcome, @User.Identity?.Name</h1>
+<p>You are logged in as: <strong>@role</strong></p>
+
+@if (role == AppRoles.Patient)
+{
+    <p>The patient pages (doctors, appointments, records) will appear here.</p>
+}
+else if (role == AppRoles.Doctor)
+{
+    <p>The doctor pages (schedule, appointment requests, records) will appear here.</p>
+}
+else if (role == AppRoles.Admin)
+{
+    <p>The admin pages (doctors, patients, appointments, reports) will appear here.</p>
+}

@@ -1,56 +1,74 @@
+using MediCare.Web.Filters;
 using MediCare.Web.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
-builder.Services.AddHttpClient<MediCareApiClient>(client =>
+// MVC
+builder.Services.AddControllersWithViews(options =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]
-        ?? throw new InvalidOperationException("ApiSettings:BaseUrl is not configured."));
+    // Every POST form must carry an anti-forgery token.
+    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+
+    // Turns 401 / 403 answers from the API into the appropriate web response.
+    options.Filters.Add<ApiExceptionFilter>();
 });
 
-// The typed client that talks to MediCare.API.
-builder.Services.AddHttpClient<MediCareApiClient>(client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]
-        ?? throw new InvalidOperationException("ApiSettings:BaseUrl is not configured."));
-});
+// The browser gets only a cookie that holds a random key. The real session,
+// including the API JWT, stays in this server's memory.
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<ITicketStore, MemoryCacheTicketStore>();
 
-// Cookie sign-in for the MVC pages. The API JWT travels inside the cookie as a claim.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.Cookie.Name = "MediCare.Auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.SlidingExpiration = false;
         options.LoginPath = "/Account/Login";
-        options.AccessDeniedPath = "/Account/Login";
-        options.SlidingExpiration = true;
+        options.AccessDeniedPath = "/Account/AccessDenied";
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme)
+    .Configure<ITicketStore>((options, ticketStore) =>
+    {
+        options.SessionStore = ticketStore;
+    });
+
+string apiBaseUrl = builder.Configuration["Api:BaseUrl"]
+    ?? throw new InvalidOperationException("Api:BaseUrl is not configured.");
+
+builder.Services.AddTransient<BearerTokenHandler>();
+builder.Services.AddHttpClient<MediCareApiClient>(client =>
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+}).AddHttpMessageHandler<BearerTokenHandler>();
+
+// Both the MVC authentication/notifications code and the doctor schedule
+// controller use the same typed API client instance.
+builder.Services.AddTransient<IMediCareApiClient>(serviceProvider =>
+    serviceProvider.GetRequiredService<MediCareApiClient>());
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseRouting();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapStaticAssets();
-
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=DoctorSchedule}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();

@@ -1,0 +1,39 @@
+﻿@model LoginViewModel
+@{
+    ViewData["Title"] = "Login";
+}
+
+<h1>Login</h1>
+
+@if (Model.SessionExpired)
+{
+    <div class="mc-alert mc-alert--warning">Your session has ended. Please log in again.</div>
+}
+
+<form class="mc-form" asp-action="Login" method="post">
+    <input type="hidden" asp-for="ReturnUrl" />
+    <div class="mc-alert mc-alert--error" asp-validation-summary="ModelOnly"></div>
+
+    <div class="mc-field">
+        <label asp-for="Email"></label>
+        <input asp-for="Email" autocomplete="username" />
+        <span class="mc-field-error" asp-validation-for="Email"></span>
+    </div>
+
+    <div class="mc-field">
+        <label asp-for="Password"></label>
+        <input asp-for="Password" autocomplete="current-password" />
+        <span class="mc-field-error" asp-validation-for="Password"></span>
+    </div>
+
+    <button type="submit" class="mc-btn">Login</button>
+</form>
+
+<p>
+    <a asp-action="RegisterPatient">Register as a patient</a> |
+    <a asp-action="RegisterDoctor">Register as a doctor</a>
+</p>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
