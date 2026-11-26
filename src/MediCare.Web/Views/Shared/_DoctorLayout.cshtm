@@ -1,0 +1,36 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - MediCare</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/medicare.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/MediCare.Web.styles.css" asp-append-version="true" />
+</head>
+<body class="mc-body">
+    <div class="mc-shell">
+        <nav class="mc-sidebar">
+            <div class="mc-brand">MediCare</div>
+            <a class="mc-nav-link" asp-controller="DoctorSchedule" asp-action="Index">Weekly Hours</a>
+            <a class="mc-nav-link" asp-controller="DoctorSchedule" asp-action="Edit">Edit Schedule</a>
+            <div class="mc-sidebar-footer">
+                <div class="mc-user-name">@User.Identity?.Name</div>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    <button type="submit" class="btn btn-sm mc-btn-logout">Sign Out</button>
+                </form>
+            </div>
+        </nav>
+        <main class="mc-main">
+            @RenderBody()
+        </main>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

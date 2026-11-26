@@ -1,0 +1,299 @@
+﻿/* MediCare theme, matching the Doctor screens design (navy sidebar + berry accent). */
+
+:root {
+    --mc-navy: #2b2e4b;
+    --mc-navy-dark: #23253c;
+    --mc-berry: #9a3963;
+    --mc-berry-dark: #822e53;
+    --mc-bg: #f6f4fa;
+    --mc-card: #ffffff;
+    --mc-text: #2b2e4b;
+    --mc-muted: #8a88a3;
+    --mc-off: #b9b6cc;
+}
+
+.mc-body {
+    background-color: var(--mc-bg);
+    color: var(--mc-text);
+}
+
+.mc-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+.mc-sidebar {
+    width: 220px;
+    background: var(--mc-navy);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+}
+
+.mc-brand {
+    font-size: 1.4rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.mc-nav-link {
+    display: block;
+    color: #cfd0e4;
+    text-decoration: none;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+}
+
+    .mc-nav-link:hover,
+    .mc-nav-link.active {
+        background: var(--mc-berry);
+        color: #fff;
+    }
+
+.mc-sidebar-footer {
+    margin-top: auto;
+    text-align: center;
+}
+
+.mc-user-name {
+    color: #cfd0e4;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+.mc-btn-logout {
+    border: 1px solid #565a86;
+    color: #cfd0e4;
+}
+
+    .mc-btn-logout:hover {
+        background: var(--mc-navy-dark);
+        color: #fff;
+    }
+
+.mc-main {
+    flex: 1;
+    padding: 32px;
+}
+
+.mc-page {
+    max-width: 860px;
+    margin: 0 auto;
+}
+
+.mc-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.mc-page-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.mc-muted {
+    color: var(--mc-muted);
+    margin: 0;
+}
+
+.mc-card {
+    background: var(--mc-card);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 1px 4px rgba(43, 46, 75, 0.06);
+}
+
+.mc-btn-primary {
+    background: var(--mc-berry);
+    border-color: var(--mc-berry);
+    color: #fff;
+}
+
+    .mc-btn-primary:hover,
+    .mc-btn-primary:focus {
+        background: var(--mc-berry-dark);
+        border-color: var(--mc-berry-dark);
+        color: #fff;
+    }
+
+.mc-btn-secondary {
+    background: #efedf6;
+    border-color: #efedf6;
+    color: var(--mc-text);
+}
+
+.mc-week-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+.mc-week-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    border-bottom: 1px solid #f0eef7;
+}
+
+.mc-week-title {
+    font-weight: 700;
+}
+
+.mc-day-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 24px;
+    border-bottom: 1px solid #f6f4fa;
+}
+
+    .mc-day-row:last-child {
+        border-bottom: none;
+    }
+
+.mc-day-today {
+    background: #fbeef5;
+}
+
+.mc-day-name {
+    font-weight: 600;
+}
+
+.mc-today-badge {
+    background: var(--mc-berry);
+    color: #fff;
+    font-size: 0.7rem;
+    border-radius: 20px;
+    padding: 2px 10px;
+    margin-left: 8px;
+}
+
+.mc-day-hours {
+    font-variant-numeric: tabular-nums;
+}
+
+.mc-day-off .mc-day-name,
+.mc-day-off .mc-day-hours {
+    color: var(--mc-off);
+}
+
+.mc-slot-note {
+    font-size: 0.8rem;
+    margin-left: 8px;
+}
+
+.mc-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--mc-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.mc-day {
+    display: inline-block;
+}
+
+.mc-day-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.mc-day-check {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.mc-day-pill {
+    border: 1px solid #ddd9ec;
+    border-radius: 24px;
+    padding: 8px 18px;
+    background: #efedf6;
+    color: var(--mc-muted);
+    cursor: pointer;
+    user-select: none;
+}
+
+.mc-day .mc-day-check:checked ~ .mc-day-pill {
+    background: var(--mc-berry);
+    border-color: var(--mc-berry);
+    color: #fff;
+}
+
+.mc-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.mc-login-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--mc-bg);
+    padding: 24px;
+}
+
+.mc-login-card {
+    width: 100%;
+    max-width: 420px;
+}
+
+.mc-login-brand {
+    color: var(--mc-berry);
+    font-weight: 700;
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+.mc-login-title {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 8px 0 4px;
+}
+
+.mc-login-card .mc-muted {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+    .mc-shell {
+        flex-direction: column;
+    }
+
+    .mc-sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .mc-brand {
+        margin-bottom: 0;
+        margin-right: 16px;
+    }
+
+    .mc-sidebar-footer {
+        margin-top: 0;
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+}

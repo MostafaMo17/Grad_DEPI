@@ -1,0 +1,51 @@
+﻿@model MediCare.Web.Models.WeeklyScheduleViewModel
+@{
+    Layout = "_DoctorLayout";
+    ViewData["Title"] = "Weekly Clinic Hours";
+}
+
+<div class="mc-page">
+    <div class="mc-page-header">
+        <div>
+            <h1 class="mc-page-title">Weekly Clinic Hours</h1>
+            <p class="mc-muted">Your standard working hours for each day of the week.</p>
+        </div>
+        <a class="btn mc-btn-primary" asp-action="Edit">Edit Schedule</a>
+    </div>
+
+    @if (TempData["Success"] is string savedMessage)
+    {
+        <div class="alert alert-success">@savedMessage</div>
+    }
+    @if (TempData["Error"] is string loadError)
+    {
+        <div class="alert alert-warning">@loadError</div>
+    }
+
+    <div class="mc-card mc-week-card">
+        <div class="mc-week-header">
+            <span class="mc-week-title">Weekly Clinic Hours</span>
+            <span class="mc-muted">@Model.WorkingDayCount working day(s)</span>
+        </div>
+
+        @foreach (var day in Model.Days)
+        {
+            <div class="mc-day-row @(day.IsToday ? "mc-day-today" : "") @(day.IsWorking ? "" : "mc-day-off")">
+                <span class="mc-day-name">
+                    @day.DayName
+                    @if (day.IsToday)
+                    {
+                        <span class="mc-today-badge">Today</span>
+                    }
+                </span>
+                <span class="mc-day-hours">
+                    @day.HoursText
+                    @if (day.IsWorking)
+                    {
+                        <span class="mc-muted mc-slot-note">@day.SlotLengthMinutes min slots</span>
+                    }
+                </span>
+            </div>
+        }
+    </div>
+</div>
