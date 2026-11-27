@@ -33,14 +33,14 @@ public class AccountController : Controller
             return RedirectToAction("Index", "Home");
         }
 
-        LoginViewModel model = new LoginViewModel();
+        ViewModels.LoginViewModel model = new ViewModels.LoginViewModel();
         model.ReturnUrl = returnUrl;
         model.SessionExpired = expired;
         return View(model);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Login(LoginViewModel model)
+    public async Task<IActionResult> Login(ViewModels.LoginViewModel model)
     {
         if (!ModelState.IsValid)
         {
