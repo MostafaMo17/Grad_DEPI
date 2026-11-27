@@ -1,7 +1,11 @@
 ﻿@using System.Security.Claims
+@inject IConfiguration Configuration
 @{
     bool isAuthenticated = User.Identity?.IsAuthenticated == true;
     string role = User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
+
+    // The browser connects to the API's SignalR hub directly (see notifications.js).
+    string hubUrl = (Configuration["Api:PublicUrl"] ?? string.Empty).TrimEnd('/') + "/hubs/notifications";
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -12,7 +16,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
-<body>
+<body data-hub-url="@hubUrl">
     <header class="mc-header">
         <nav class="mc-nav">
             <a class="mc-nav-link" asp-controller="Home" asp-action="Index">MediCare</a>
@@ -20,6 +24,10 @@
             @if (isAuthenticated)
             {
                 <a class="mc-nav-link" asp-controller="Home" asp-action="Dashboard">Dashboard</a>
+
+                <a class="mc-nav-link" id="mc-notification-bell" asp-controller="Notifications" asp-action="Index">
+                    Notifications <span id="mc-notification-count" class="mc-badge" hidden>0</span>
+                </a>
 
                 <form class="mc-logout-form" asp-controller="Account" asp-action="Logout" method="post">
                     <span class="mc-user-name">@User.Identity?.Name (@role)</span>
@@ -35,6 +43,9 @@
         </nav>
     </header>
 
+    <!-- New live notifications appear here for a few seconds (filled by notifications.js). -->
+    <div id="mc-toast-container" class="mc-toast-container" aria-live="polite"></div>
+
     <main class="mc-main container">
         @RenderBody()
     </main>
@@ -46,6 +57,14 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @if (isAuthenticated)
+    {
+        <!-- The SignalR client. TODO: serve it from our own files before production (now: CDN). -->
+        <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+        <script src="~/js/notifications.js" asp-append-version="true"></script>
+    }
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

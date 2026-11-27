@@ -155,6 +155,13 @@ public class MediCareApiClient : IMediCareApiClient
         return await SendAsync<HubTokenDto>(HttpMethod.Post, "notifications/hub-token");
     }
 
+    // TEMPORARY (development only), The API answers 404 in any other environment
+    public async Task CreateTestNotificationAsync()
+    {
+        await SendAsync(HttpMethod.Post, "notifications/dev-test");
+    }
+
+    // Helpers
     // Sends a request and reads the JSON answer.
     private async Task<T> SendAsync<T>(HttpMethod method, string url, object? body = null)
     {

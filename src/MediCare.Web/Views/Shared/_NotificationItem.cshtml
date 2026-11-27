@@ -1,0 +1,22 @@
+﻿@model NotificationDto
+@{
+    // The "mark as read" form sends the current filter and page, so the user returns to the same list.
+    string unreadOnly = Context.Request.Query["unreadOnly"].ToString().Equals("true", StringComparison.OrdinalIgnoreCase)
+        ? "true" : "false";
+    int page = int.TryParse(Context.Request.Query["page"].ToString(), out int parsedPage) ? parsedPage : 1;
+}
+<li class="mc-notification @(Model.IsRead ? "" : "mc-notification--unread")" data-id="@Model.NotificationId">
+    <strong class="mc-notification-title">@Model.Title</strong>
+    <span class="mc-notification-message">@Model.Message</span>
+    <time class="mc-notification-time" datetime="@Model.CreatedAtUtc.ToString("o")">@CairoTime.Format(Model.CreatedAtUtc)</time>
+
+    @if (!Model.IsRead)
+    {
+        <form class="mc-notification-form" asp-controller="Notifications" asp-action="MarkRead" method="post">
+            <input type="hidden" name="id" value="@Model.NotificationId" />
+            <input type="hidden" name="unreadOnly" value="@unreadOnly" />
+            <input type="hidden" name="page" value="@(page)" />
+            <button type="submit" class="mc-btn mc-btn--small">Mark as read</button>
+        </form>
+    }
+</li>

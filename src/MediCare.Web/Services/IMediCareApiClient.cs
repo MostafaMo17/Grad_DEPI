@@ -16,4 +16,7 @@ public interface IMediCareApiClient
     Task MarkNotificationAsReadAsync(int notificationId);
     Task MarkAllNotificationsAsReadAsync();
     Task<HubTokenDto> GetHubTokenAsync();
+
+    // TEMPORARY (development only): creates a test notification for the logged in user
+    Task CreateTestNotificationAsync();
 }

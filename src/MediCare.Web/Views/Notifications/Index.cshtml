@@ -1,0 +1,50 @@
+﻿@model NotificationsViewModel
+@inject IWebHostEnvironment HostEnvironment
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<h1>Notifications</h1>
+
+<p>
+    <a asp-action="Index">All</a> |
+    <a asp-action="Index" asp-route-unreadOnly="true">Unread only</a>
+</p>
+
+<form class="mc-inline-form" asp-action="MarkAllRead" method="post">
+    <button type="submit" class="mc-btn">Mark all as read</button>
+</form>
+
+@if (HostEnvironment.IsDevelopment())
+{
+    <form class="mc-inline-form" asp-action="CreateTest" method="post">
+        <button type="submit" class="mc-btn">Create a test notification (development only)</button>
+    </form>
+}
+
+@if (Model.Items.Count == 0)
+{
+    <p id="mc-notification-empty">You have no notifications.</p>
+}
+
+<ul id="mc-notification-list" class="mc-notification-list">
+    @foreach (NotificationDto item in Model.Items)
+    {
+        <partial name="_NotificationItem" model="item" />
+    }
+</ul>
+
+@if (Model.TotalPages > 1)
+{
+    <nav class="mc-pager">
+        @if (Model.HasPrevious)
+        {
+            <a asp-action="Index" asp-route-unreadOnly="@Model.UnreadOnly" asp-route-page="@(Model.Page - 1)">Previous</a>
+        }
+        <span>Page @Model.Page of @Model.TotalPages</span>
+        @if (Model.HasNext)
+        {
+            <a asp-action="Index" asp-route-unreadOnly="@Model.UnreadOnly" asp-route-page="@(Model.Page + 1)">Next</a>
+        }
+    </nav>
+}
